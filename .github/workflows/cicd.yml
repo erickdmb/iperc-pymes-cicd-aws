@@ -6,7 +6,6 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  PROJECT_NAME: iperc-pymes
   ECR_REPOSITORY: iperc-pymes-app
   ECS_CLUSTER: iperc-cluster
   ECS_SERVICE: iperc-service
@@ -40,5 +39,22 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
 
-      # A partir de aquí, necesitarás ECS... ¡pero lo configuramos después!
-      # Por ahora, solo construimos y subimos la imagen.
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition iperc-app --query taskDefinition > task-def.json
+
+      - name: Fill in new image ID
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v3
+        with:
+          task-definition: task-def.json
+          container-name: iperc-app
+          image: ${{ env.IMAGE_URI }}
+
+      - name: Deploy to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v3
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true

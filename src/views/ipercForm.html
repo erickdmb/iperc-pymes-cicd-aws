@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IPERC Matriz Oficial - Perú</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      padding: 10px;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: #1a5276;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+    }
+    .header p {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    .section {
+      padding: 20px;
+    }
+    .section-title {
+      font-size: 1.2rem;
+      color: #1a5276;
+      margin-bottom: 15px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #3498db;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    @media (min-width: 768px) {
+      .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 0.95rem;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: #3498db;
+      box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+
+    /* Tabla responsiva */
+    .risk-table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid #bdc3c7;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #ecf0f1;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Columnas específicas */
+    .col-n { width: 40px; text-align: center; }
+    .col-actividad { min-width: 150px; }
+    .col-peligro { min-width: 150px; }
+    .col-consecuencia { min-width: 200px; }
+    .col-medidas-exist { min-width: 150px; }
+    .col-prob { width: 60px; text-align: center; }
+    .col-sev { width: 60px; text-align: center; }
+    .col-mr { width: 60px; text-align: center; font-weight: bold; }
+    .col-medidas-impl { min-width: 150px; }
+    .col-responsable { width: 120px; }
+
+    /* Estilos para Mr (color según valor) */
+    .mr-rojo { background: #ff6b6b; color: white; }
+    .mr-naranja { background: #ffa500; color: white; }
+    .mr-amarillo { background: #ffd700; color: black; }
+    .mr-verde { background: #4cd137; color: white; }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-add {
+      background: #27ae60;
+      color: white;
+      display: block;
+      margin: 15px auto;
+      width: fit-content;
+    }
+    .btn-submit {
+      background: #2980b9;
+      color: white;
+      display: block;
+      margin: 30px auto;
+      padding: 12px 30px;
+      font-size: 1.1rem;
+      width: fit-content;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 15px;
+      color: #7f8c8d;
+      font-size: 0.9rem;
+      border-top: 1px solid #eee;
+    }
+
+    /* Tabla de guía */
+    .guide-table {
+      margin: 20px 0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .guide-table h3 {
+      background: #3498db;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      margin: 0;
+    }
+    .guide-table table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .guide-table th, .guide-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    .guide-table th {
+      background: #ecf0f1;
+      font-weight: bold;
+    }
+    .guide-table .rojo { background: #ff6b6b; color: white; }
+    .guide-table .naranja { background: #ffa500; color: white; }
+    .guide-table .amarillo { background: #ffd700; color: black; }
+    .guide-table .verde { background: #4cd137; color: white; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>✅ MATRIZ DE IDENTIFICACIÓN DE PELIGROS Y EVALUACIÓN DE RIESGOS (IPERC)</h1>
+      <p>Según Normativa Peruana - MTPE</p>
+    </div>
+
+    <form id="ipercForm" method="POST" action="/iperc">
+      
+      <!-- Encabezado -->
+      <div class="section">
+        <h2 class="section-title">📋 Información General</h2>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="company">Razón Social o Denominación Social</label>
+            <input type="text" id="company" name="company" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="area">Área</label>
+            <input type="text" id="area" name="area" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="process">Proceso</label>
+            <input type="text" id="process" name="process" class="form-control" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Matriz de riesgos -->
+      <div class="section">
+        <h2 class="section-title">📊 Matriz de Evaluación de Riesgos</h2>
+        <div class="risk-table-container">
+          <table id="ipercTable">
+            <thead>
+              <tr>
+                <th class="col-n">N°</th>
+                <th class="col-actividad">ACTIVIDAD</th>
+                <th class="col-peligro">PELIGRO</th>
+                <th class="col-consecuencia">CONSECUENCIA RIESGO</th>
+                <th class="col-medidas-exist">MEDIDAS DE CONTROL EXISTENTES</th>
+                <th class="col-prob">PROBABILIDAD (P)</th>
+                <th class="col-sev">SEVERIDAD (S)</th>
+                <th class="col-mr">Mr = P×S</th>
+                <th class="col-medidas-impl">MEDIDAS DE CONTROL A IMPLEMENTAR</th>
+                <th class="col-responsable">RESPONSABLE</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-n">1</td>
+                <td class="col-actividad"><input name="rows[0].activity" class="form-control" required></td>
+                <td class="col-peligro"><input name="rows[0].hazard" class="form-control" required></td>
+                <td class="col-consecuencia"><textarea name="rows[0].consequence" class="form-control" rows="2" required></textarea></td>
+                <td class="col-medidas-exist"><textarea name="rows[0].existingControls" class="form-control" rows="2"></textarea></td>
+                <td class="col-prob"><input type="number" min="1" max="5" name="rows[0].probability" class="form-control" required></td>
+                <td class="col-sev"><input type="number" min="1" max="50" name="rows[0].severity" class="form-control" required></td>
+                <td class="col-mr"><span id="mr-0">—</span></td>
+                <td class="col-medidas-impl"><textarea name="rows[0].newControls" class="form-control" rows="2"></textarea></td>
+                <td class="col-responsable"><input name="rows[0].responsible" class="form-control"></td>
+                <td><button type="button" onclick="removeRow(this)">🗑️</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-add" onclick="addRow()">+ Añadir fila</button>
+      </div>
+
+      <!-- Guía de valoración -->
+      <div class="section">
+        <h2 class="section-title">📘 Guía de Valoración de Riesgos</h2>
+        <div class="guide-table">
+          <h3>Severidad de las consecuencias Vs Probabilidad / frecuencia</h3>
+          <table>
+            <thead>
+              <tr>
+                <th rowspan="2">SEVERIDAD</th>
+                <th colspan="5">PROBABILIDAD</th>
+              </tr>
+              <tr>
+                <th>Escasa (1)</th>
+                <th>Baja probabilidad (2)</th>
+                <th>Puede suceder (3)</th>
+                <th>Probable (4)</th>
+                <th>Muy probable (5)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Catastróficos (50)</td>
+                <td class="rojo">50</td>
+                <td class="rojo">100</td>
+                <td class="rojo">150</td>
+                <td class="rojo">200</td>
+                <td class="rojo">250</td>
+              </tr>
+              <tr>
+                <td>Mayor (20)</td>
+                <td class="naranja">20</td>
+                <td class="naranja">40</td>
+                <td class="naranja">60</td>
+                <td class="naranja">80</td>
+                <td class="naranja">100</td>
+              </tr>
+              <tr>
+                <td>Moderado alto (10)</td>
+                <td class="amarillo">10</td>
+                <td class="amarillo">20</td>
+                <td class="amarillo">30</td>
+                <td class="amarillo">40</td>
+                <td class="amarillo">50</td>
+              </tr>
+              <tr>
+                <td>Moderado (5)</td>
+                <td class="amarillo">5</td>
+                <td class="amarillo">10</td>
+                <td class="amarillo">15</td>
+                <td class="amarillo">20</td>
+                <td class="amarillo">25</td>
+              </tr>
+              <tr>
+                <td>Moderado Leve (2)</td>
+                <td class="verde">2</td>
+                <td class="verde">4</td>
+                <td class="verde">6</td>
+                <td class="verde">8</td>
+                <td class="verde">10</td>
+              </tr>
+              <tr>
+                <td>Mínima (1)</td>
+                <td class="verde">1</td>
+                <td class="verde">2</td>
+                <td class="verde">3</td>
+                <td class="verde">4</td>
+                <td class="verde">5</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="guide-table">
+          <h3>VALORACIÓN DE RIESGOS</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>RIESGO</th>
+                <th>COLOR</th>
+                <th>RANGO</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>RIESGO CRÍTICO</td>
+                <td class="rojo">ROJO</td>
+                <td>50 < X ≤ 250</td>
+              </tr>
+              <tr>
+                <td>RIESGO ALTO</td>
+                <td class="naranja">NARANJA</td>
+                <td>10 < X ≤ 50</td>
+              </tr>
+              <tr>
+                <td>RIESGO MEDIO</td>
+                <td class="amarillo">AMARILLO</td>
+                <td>3 < X ≤ 10</td>
+              </tr>
+              <tr>
+                <td>RIESGO BAJO</td>
+                <td class="verde">VERDE</td>
+                <td>X ≤ 3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-submit">📤 Guardar IPERC</button>
+    </form>
+
+    <div class="footer">
+      <p>IPERC para Pymes - Proyecto Final Cloud Computing & DevOps</p>
+    </div>
+  </div>
+
+  <script>
+    let rowIndex = 1;
+
+    function addRow() {
+      const tbody = document.querySelector('#ipercTable tbody');
+      const newRow = document.createElement('tr');
+      newRow.innerHTML = `
+        <td class="col-n">${rowIndex + 1}</td>
+        <td class="col-actividad"><input name="rows[${rowIndex}].activity" class="form-control" required></td>
+        <td class="col-peligro"><input name="rows[${rowIndex}].hazard" class="form-control" required></td>
+        <td class="col-consecuencia"><textarea name="rows[${rowIndex}].consequence" class="form-control" rows="2" required></textarea></td>
+        <td class="col-medidas-exist"><textarea name="rows[${rowIndex}].existingControls" class="form-control" rows="2"></textarea></td>
+        <td class="col-prob"><input type="number" min="1" max="5" name="rows[${rowIndex}].probability" class="form-control" required></td>
+        <td class="col-sev"><input type="number" min="1" max="50" name="rows[${rowIndex}].severity" class="form-control" required></td>
+        <td class="col-mr"><span id="mr-${rowIndex}">—</span></td>
+        <td class="col-medidas-impl"><textarea name="rows[${rowIndex}].newControls" class="form-control" rows="2"></textarea></td>
+        <td class="col-responsable"><input name="rows[${rowIndex}].responsible" class="form-control"></td>
+        <td><button type="button" onclick="removeRow(this)">🗑️</button></td>
+      `;
+      tbody.appendChild(newRow);
+      rowIndex++;
+    }
+
+    function removeRow(button) {
+      const row = button.closest('tr');
+      if (document.querySelectorAll('#ipercTable tbody tr').length > 1) {
+        row.remove();
+        // Actualizar números
+        document.querySelectorAll('#ipercTable tbody tr').forEach((tr, i) => {
+          tr.cells[0].textContent = i + 1;
+        });
+      } else {
+        alert('Debe haber al menos una fila en la matriz.');
+      }
+    }
+
+    // Calcular Mr en tiempo real
+    document.addEventListener('input', (e) => {
+      if (e.target.name && e.target.name.startsWith('rows[')) {
+        const name = e.target.name;
+        const index = name.match(/\[(\d+)\]/)[1];
+        const prob = parseInt(document.querySelector(`input[name="rows[${index}].probability"]`).value) || 0;
+        const sev = parseInt(document.querySelector(`input[name="rows[${index}].severity"]`).value) || 0;
+        const mr = prob * sev;
+        const mrCell = document.getElementById(`mr-${index}`);
+        mrCell.textContent = mr;
+
+        // Aplicar color según valor
+        let className = '';
+        if (mr <= 3) className = 'mr-verde';
+        else if (mr <= 10) className = 'mr-amarillo';
+        else if (mr <= 50) className = 'mr-naranja';
+        else if (mr <= 250) className = 'mr-rojo';
+
+        mrCell.className = `col-mr ${className}`;
+      }
+    });
+  </script>
+</body>
+</html>

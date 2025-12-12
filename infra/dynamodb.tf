@@ -1,15 +1,10 @@
 resource "aws_dynamodb_table" "iperc_table" {
-  name         = "${var.project_name}-evaluations"
+  name         = "iperc-pymes-evaluations"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "evaluationId"
+  hash_key     = "ipercId"
 
   attribute {
-    name = "evaluationId"
+    name = "ipercId"
     type = "S"
-  }
-
-  tags = {
-    Environment = "dev"
-    Project     = var.project_name
   }
 }
