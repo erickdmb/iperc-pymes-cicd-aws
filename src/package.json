@@ -1,0 +1,13 @@
+{
+  "name": "iperc-pymes",
+  "version": "1.0.0",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "@aws-sdk/client-dynamodb": "^3.400.0",
+    "uuid": "^9.0.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  }
+}

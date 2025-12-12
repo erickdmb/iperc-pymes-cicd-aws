@@ -1,0 +1,36 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Build output
+/dist/
+/build/
+/.parcel-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+
+# Docker
+*.pid
+
+# Misc
+*.swp
+*.swo
+.idea/
+.vscode/
