@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>IPERC Matriz Oficial - Perú</title>
   <style>
+      /* Sidebar desplegable */
+      .layout { display: grid; grid-template-columns: 260px 1fr; gap: 16px; }
+      .sidebar { background: #ffffff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 10px; height: fit-content; }
+      .sidebar h3 { font-size: 1rem; margin-bottom: 8px; color: #1a5276; display:flex; justify-content:space-between; align-items:center; }
+      .sidebar .toggle { cursor:pointer; font-size:0.9rem; color:#2980b9; }
+      .sidebar.collapsed { width: 40px; padding: 6px; }
+      .sidebar.collapsed .content { display:none; }
+      .sidebar ul { list-style: none; max-height: 400px; overflow:auto; padding:0; }
+      .sidebar li { padding: 6px 8px; border-bottom: 1px solid #f0f3f5; display:flex; justify-content:space-between; align-items:center; }
+      .sidebar li a { color: #2980b9; text-decoration: none; }
+      .sidebar .meta { font-size: 0.8rem; color:#7f8c8d; }
     * {
       box-sizing: border-box;
       margin: 0;
@@ -76,6 +87,15 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 1rem;
+    }
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+    input.form-control {
+      height: 40px;
     }
     .form-control:focus {
       outline: none;
@@ -161,32 +181,37 @@
     }
 
     /* Tabla de guía */
+    /* Guía compacta */
     .guide-table {
-      margin: 20px 0;
-      border: 2px solid #ddd;
-      border-radius: 8px;
+      margin: 12px 0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
       overflow: hidden;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .guide-table h3 {
       background: #3498db;
       color: white;
-      padding: 10px;
+      padding: 8px;
       text-align: center;
       margin: 0;
+      font-size: 0.95rem;
     }
     .guide-table table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
     }
     .guide-table th, .guide-table td {
       border: 1px solid #ddd;
-      padding: 8px;
+      padding: 6px;
       text-align: center;
     }
     .guide-table th {
       background: #ecf0f1;
-      font-weight: bold;
+      font-weight: 600;
     }
     .guide-table .rojo { background: #ff6b6b; color: white; }
     .guide-table .naranja { background: #ffa500; color: white; }
@@ -196,6 +221,20 @@
 </head>
 <body>
   <div class="container">
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <h3>
+          IPERC Generados
+          <span>
+            <button type="button" class="btn" style="background:#eef6ff;color:#2980b9;padding:6px 10px" onclick="loadIpercList()">↻ Actualizar</button>
+            <button type="button" class="btn" style="background:#f4f6f8;color:#1a5276;padding:6px 10px" onclick="toggleSidebar()" id="toggleBtn">Ocultar</button>
+          </span>
+        </h3>
+        <div class="content">
+          <ul id="ipercList"><li style="padding:6px 8px;color:#7f8c8d">No hay IPERC guardados aún.</li></ul>
+        </div>
+      </aside>
+      <main>
     <div class="header">
       <h1>✅ MATRIZ DE IDENTIFICACIÓN DE PELIGROS Y EVALUACIÓN DE RIESGOS (IPERC)</h1>
       <p>Según Normativa Peruana - MTPE</p>
@@ -253,7 +292,7 @@
                 <td class="col-sev"><input type="number" min="1" max="50" name="rows[0].severity" class="form-control" required></td>
                 <td class="col-mr"><span id="mr-0">—</span></td>
                 <td class="col-medidas-impl"><textarea name="rows[0].newControls" class="form-control" rows="2"></textarea></td>
-                <td class="col-responsable"><input name="rows[0].responsible" class="form-control"></td>
+                <td class="col-responsable"><input name="rows[0].responsible" class="form-control" required></td>
                 <td><button type="button" onclick="removeRow(this)">🗑️</button></td>
               </tr>
             </tbody>
@@ -266,7 +305,7 @@
       <div class="section">
         <h2 class="section-title">📘 Guía de Valoración de Riesgos</h2>
         <div class="guide-table">
-          <h3>Severidad de las consecuencias Vs Probabilidad / frecuencia</h3>
+          <h3>Severidad vs Probabilidad (Guía)</h3>
           <table>
             <thead>
               <tr>
@@ -335,7 +374,7 @@
         </div>
 
         <div class="guide-table">
-          <h3>VALORACIÓN DE RIESGOS</h3>
+          <h3>Valoración de Riesgos (Guía)</h3>
           <table>
             <thead>
               <tr>
@@ -370,16 +409,103 @@
         </div>
       </div>
 
-      <button type="submit" class="btn btn-submit">📤 Guardar IPERC</button>
+      <div style="display: flex; gap: 15px; justify-content: center; margin: 30px 0;">
+        <button type="button" class="btn btn-submit" onclick="submitForm('save')" style="background: #27ae60;">💾 Guardar</button>
+        <button type="button" class="btn btn-submit" onclick="submitForm('export')" style="background: #e67e22;">📤 Exportar PDF</button>
+        <button type="button" class="btn btn-submit" onclick="showList()" style="background: #2980b9;">📚 Ver lista</button>
+      </div>
     </form>
 
     <div class="footer">
       <p>IPERC para Pymes - Proyecto Final Cloud Computing & DevOps</p>
     </div>
+      </main>
+    </div>
   </div>
 
   <script>
     let rowIndex = 1;
+
+    async function loadIpercList() {
+      try {
+        const res = await fetch('/api/iperc');
+        const data = await res.json();
+        const ul = document.getElementById('ipercList');
+        ul.innerHTML = data.map(d => `
+          <li>
+            <span>
+              <a href="/iperc/${d.ipercId}/view" target="_blank">${d.ipercId}</a>
+              <div class="meta">${d.company || ''} · ${d.area || ''} · ${d.process || ''}</div>
+            </span>
+            <a href="/iperc/${d.ipercId}">Editar</a>
+          </li>
+        `).join('');
+      } catch (e) {
+        console.error('Error cargando lista IPERC', e);
+      }
+    }
+
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      sb.classList.toggle('collapsed');
+      const tb = document.getElementById('toggleBtn');
+      if (tb) tb.textContent = sb.classList.contains('collapsed') ? 'Mostrar' : 'Ocultar';
+    }
+
+    document.addEventListener('DOMContentLoaded', loadIpercList);
+    function showList(){
+      const sb = document.getElementById('sidebar');
+      if (sb.classList.contains('collapsed')) sb.classList.remove('collapsed');
+      loadIpercList();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function submitForm(action) {
+      const form = document.getElementById('ipercForm');
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      // Enviar como application/x-www-form-urlencoded para que Express lo parsee
+      const formData = new FormData(form);
+      const params = new URLSearchParams();
+      for (const [key, value] of formData.entries()) {
+        params.append(key, value);
+      }
+      try {
+        const response = await fetch('/iperc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString()
+        });
+        
+        if (!response.ok) {
+          const text = await response.text();
+          alert('Error al guardar: ' + text);
+          return;
+        }
+
+        const html = await response.text();
+        const match = html.match(/IPERC-\d{4}-[A-Z0-9]+/);
+        if (!match) {
+          alert('IPERC guardado, pero no se pudo extraer el ID.');
+          return;
+        }
+
+        const ipercId = match[0];
+        
+        if (action === 'save') {
+          alert(`✅ IPERC guardado con ID: ${ipercId}`);
+          showList();
+        } else if (action === 'export') {
+          window.open(`/pdf/${ipercId}?download=1`, '_blank');
+          setTimeout(() => showList(), 500);
+        }
+      } catch (err) {
+        alert('Error de conexión: ' + err.message);
+      }
+    }
 
     function addRow() {
       const tbody = document.querySelector('#ipercTable tbody');

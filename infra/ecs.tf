@@ -1,21 +1,19 @@
-# ECS Cluster
 resource "aws_ecs_cluster" "iperc" {
-  name = "iperc-cluster"
+  name = "${var.project_name}-cluster"
 }
 
-# Task Definition
 resource "aws_ecs_task_definition" "iperc" {
-  family                   = "iperc-app"
+  family                   = "${var.project_name}-app"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_role.arn
+  execution_role_arn       = aws_iam_role.ecs_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([{
-    name      = "iperc-app"
-    image     = "${aws_ecr_repository.iperc_repo.repository_url}:latest"
+    name      = "${var.project_name}-app"
+    image     = "${aws_ecr_repository.iperc.repository_url}:latest"
     essential = true
     portMappings = [{
       containerPort = 3000
@@ -30,15 +28,13 @@ resource "aws_ecs_task_definition" "iperc" {
       }
     }
     environment = [
-      { name = "AWS_REGION", value = var.aws_region },
-      { name = "PORT", value = "3000" }
+      { name = "AWS_REGION", value = var.aws_region }
     ]
   }])
 }
 
-# ECS Service
 resource "aws_ecs_service" "iperc" {
-  name            = "iperc-service"
+  name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.iperc.id
   task_definition = aws_ecs_task_definition.iperc.arn
   desired_count   = 2
@@ -51,9 +47,29 @@ resource "aws_ecs_service" "iperc" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.iperc.arn
-    container_name   = "iperc-app"
+    container_name   = "${var.project_name}-app"
     container_port   = 3000
   }
 
-  depends_on = [aws_iam_role_policy.ecs_dynamodb]
+  depends_on = [aws_iam_role_policy_attachment.ecs_task_dynamodb]
+}
+
+resource "aws_security_group" "ecs_tasks" {
+  name        = "${var.project_name}-ecs-sg"
+  description = "Allow ALB to reach ECS tasks"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
