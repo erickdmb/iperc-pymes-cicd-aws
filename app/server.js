@@ -13,7 +13,10 @@ const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-    
+
+// Middlewares
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Modo local opcional para pruebas (sin AWS)
 const USE_LOCAL = process.env.USE_LOCAL_STORE === 'true';
@@ -48,54 +51,50 @@ const TABLE_NAME = 'iperc-pymes-evaluations';
 
 const dynamoClient = new DynamoDBClient({ region: REGION });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Servir archivos estáticos (CSS, JS)
+app.use('/css', express.static(path.join(__dirname, 'views/css')));
+app.use('/js', express.static(path.join(__dirname, 'views/js')));
+
 // Helper para parsear filas desde form (array o estilo rows[0].campo)
 function parseRows(body) {
-  if (Array.isArray(body.rows)) {
-    return body.rows.map((r) => {
-      const prob = parseInt(r.probability) || 0;
-      const sev = parseInt(r.severity) || 0;
+  const rows = [];
+  
+  // Buscar todos los indices de filas
+  const rowIndices = new Set();
+  for (const key in body) {
+    const match = key.match(/^rows\[(\d+)\]\.activity$/);
+    if (match) {
+      rowIndices.add(parseInt(match[1]));
+    }
+  }
+  
+  // Procesar cada fila
+  const sortedIndices = Array.from(rowIndices).sort((a, b) => a - b);
+  sortedIndices.forEach(i => {
+    const activity = body[`rows[${i}].activity`];
+    
+    if (activity && activity.trim()) {
+      const prob = parseInt(body[`rows[${i}].probability`]) || 0;
+      const sev = parseInt(body[`rows[${i}].severity`]) || 0;
       const mr = prob * sev;
       const riskInfo = getRiskColorAndLevel(mr);
-      return {
-        activity: r.activity || '',
-        hazard: r.hazard || '',
-        consequence: r.consequence || '',
-        existingControls: r.existingControls || '',
+      
+      rows.push({
+        activity: activity.trim(),
+        hazard: body[`rows[${i}].hazard`] || '',
+        consequence: body[`rows[${i}].consequence`] || '',
+        existingControls: body[`rows[${i}].existingControls`] || '',
         probability: prob,
         severity: sev,
         mr,
         riskColor: riskInfo.color,
         riskLevel: riskInfo.level,
-        newControls: r.newControls || '',
-        responsible: r.responsible || ''
-      };
-    });
-  }
-  // Fallback: recorrer rows[0].campo, rows[1].campo ...
-  const rows = [];
-  let i = 0;
-  while (body[`rows[${i}].activity`]) {
-    const prob = parseInt(body[`rows[${i}].probability`]) || 0;
-    const sev = parseInt(body[`rows[${i}].severity`]) || 0;
-    const mr = prob * sev;
-    const riskInfo = getRiskColorAndLevel(mr);
-    rows.push({
-      activity: body[`rows[${i}].activity`],
-      hazard: body[`rows[${i}].hazard`],
-      consequence: body[`rows[${i}].consequence`],
-      existingControls: body[`rows[${i}].existingControls`] || '',
-      probability: prob,
-      severity: sev,
-      mr,
-      riskColor: riskInfo.color,
-      riskLevel: riskInfo.level,
-      newControls: body[`rows[${i}].newControls`] || '',
-      responsible: body[`rows[${i}].responsible`] || ''
-    });
-    i++;
-  }
+        newControls: body[`rows[${i}].newControls`] || '',
+        responsible: body[`rows[${i}].responsible`] || ''
+      });
+    }
+  });
+  
   return rows;
 }
 
@@ -108,45 +107,110 @@ function getRiskColorAndLevel(mr) {
   return { color: '#cccccc', level: 'NO DEFINIDO', class: 'gris' };
 }
 
+// Limpiar undefined de objetos
+function cleanObject(obj) {
+  const cleaned = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key];
+    }
+  }
+  return cleaned;
+}
+
 // Sirve formulario
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'ipercForm.html'));
 });
 
-// Guarda nuevo IPERC
+// Debug: mostrar qué data llegó en POST
+app.post('/debug', (req, res) => {
+  res.json({
+    body: req.body,
+    keys: Object.keys(req.body),
+    sample: req.body[`rows[0].activity`]
+  });
+});
+
+// Guarda nuevo IPERC o actualiza uno existente
 app.post('/iperc', async (req, res) => {
   try {
-    const { company, area, process } = req.body;
+    const { company, area, process, ipercId } = req.body;
+    
+    console.log('=== POST /iperc ===');
+    console.log('Body completo:', JSON.stringify(req.body, null, 2).substring(0, 1000));
+    console.log('\nTodos los keys del body:');
+    Object.keys(req.body).forEach(key => {
+      console.log(`  ${key}: ${JSON.stringify(req.body[key]).substring(0, 100)}`);
+    });
+    
+    console.log('\nCompany:', company);
+    console.log('Area:', area);
+    console.log('Process:', process);
+    console.log('IpercId (para edición):', ipercId);
+    
     const rows = parseRows(req.body);
+    console.log('\n✓ Rows parsed count:', rows.length);
+    if (rows.length > 0) {
+      console.log('First row:', JSON.stringify(rows[0], null, 2));
+    }
 
-    console.log('POST /iperc body keys:', Object.keys(req.body));
-    console.log('Rows parsed count:', rows.length);
     if (!company || !area || !process) {
       return res.status(400).send('Faltan campos obligatorios: company, area, process');
     }
     if (rows.length === 0) {
-      return res.status(400).send('Debes ingresar al menos una fila en la matriz');
+      console.log('❌ No hay filas para guardar');
+      return res.status(400).send('Debes ingresar al menos una fila a la matriz');
     }
 
-    const ipercId = `IPERC-${new Date().getFullYear()}-${uuidv4().substring(0,6).toUpperCase()}`;
     const now = new Date().toISOString();
+    let id = ipercId;
+    let isUpdate = false;
 
-    const item = { ipercId, company, area, process, rows, createdAt: now, updatedAt: now };
+    // Si viene ipercId, es una actualización; si no, es nuevo
+    if (id) {
+      isUpdate = true;
+      console.log('🔄 Actualizando IPERC existente:', id);
+    } else {
+      id = `IPERC-${new Date().getFullYear()}-${uuidv4().substring(0,6).toUpperCase()}`;
+      console.log('✨ Creando nuevo IPERC:', id);
+    }
+
+    const item = { 
+      ipercId: id, 
+      company, 
+      area, 
+      process, 
+      rows, 
+      createdAt: isUpdate ? undefined : now,
+      updatedAt: now 
+    };
 
     if (USE_LOCAL) {
-      memoryStore.set(ipercId, item);
+      if (isUpdate) {
+        const existing = memoryStore.get(id);
+        if (!existing) return res.status(404).send('IPERC no encontrado');
+        memoryStore.set(id, { ...existing, ...item, createdAt: existing.createdAt });
+      } else {
+        item.createdAt = now;
+        memoryStore.set(id, item);
+      }
+      console.log('✅ Guardado en memoria local');
     } else {
+      const cleanedItem = cleanObject(item);
       const params = {
         TableName: TABLE_NAME,
-        Item: marshall(item)
+        Item: marshall(cleanedItem)
       };
       await dynamoClient.send(new PutItemCommand(params));
+      console.log('✅ Guardado en DynamoDB');
     }
 
     res.send(`
-      <h2>✅ IPERC guardado con ID: ${ipercId}</h2>
+      <h2>✅ IPERC ${isUpdate ? 'actualizado' : 'guardado'} con ID: ${id}</h2>
+      <p>Filas guardadas: ${rows.length}</p>
       <p><a href="/list">Ver todos</a></p>
-      <p><a href="/pdf/${ipercId}">👁️ Ver PDF</a> | <a href="/pdf/${ipercId}?download=1">📥 Descargar</a></p>
+      <p><a href="/pdf/${id}">👁️ Ver PDF</a> | <a href="/pdf/${id}?download=1">📥 Descargar</a></p>
       <p><a href="/">Crear otro</a></p>
     `);
   } catch (err) {
@@ -155,6 +219,100 @@ app.post('/iperc', async (req, res) => {
       ? 'Faltan credenciales de AWS. Configura AWS_ACCESS_KEY_ID y AWS_SECRET_ACCESS_KEY.'
       : '';
     res.status(500).send(`Error al guardar IPERC. ${hint}`);
+  }
+});
+
+// Nuevo endpoint para JSON
+app.post('/iperc-json', async (req, res) => {
+  try {
+    const { company, area, process, ipercId, rows } = req.body;
+
+    if (!company || !area || !process) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ error: 'Debes ingresar al menos una fila a la matriz' });
+    }
+
+    const now = new Date().toISOString();
+    let id = ipercId;
+    let isUpdate = false;
+
+    if (id) {
+      isUpdate = true;
+    } else {
+      id = `IPERC-${new Date().getFullYear()}-${uuidv4().substring(0,6).toUpperCase()}`;
+    }
+
+    // Calcular métricas para cada fila
+    const processedRows = rows.map(row => {
+      const prob = parseInt(row.probability) || 0;
+      const sev = parseInt(row.severity) || 0;
+      const mr = prob * sev;
+      const colorLevel = getRiskColorAndLevel(mr);
+      return {
+        activity: row.activity || '',
+        hazard: row.hazard || '',
+        consequence: row.consequence || '',
+        existingControls: row.existingControls || '',
+        probability: prob,
+        severity: sev,
+        mr,
+        riskColor: colorLevel.color,
+        riskLevel: colorLevel.level,
+        newControls: row.newControls || '',
+        responsible: row.responsible || ''
+      };
+    });
+
+    const item = { 
+      ipercId: id, 
+      company, 
+      area, 
+      process, 
+      rows: processedRows, 
+      createdAt: isUpdate ? undefined : now,
+      updatedAt: now 
+    };
+
+    if (USE_LOCAL) {
+      memoryStore.set(id, item);
+    } else {
+      const cleanedItem = cleanObject(item);
+      const params = {
+        TableName: 'iperc-pymes-evaluations',
+        Item: marshall(cleanedItem)
+      };
+      if (isUpdate) {
+        // Actualizar
+        const updateParams = {
+          TableName: 'iperc-pymes-evaluations',
+          Key: marshall({ ipercId: id }),
+          UpdateExpression: 'SET #c = :company, #a = :area, #p = :process, #r = :rows, updatedAt = :now',
+          ExpressionAttributeNames: {
+            '#c': 'company',
+            '#a': 'area',
+            '#p': 'process',
+            '#r': 'rows'
+          },
+          ExpressionAttributeValues: marshall({
+            ':company': company,
+            ':area': area,
+            ':process': process,
+            ':rows': processedRows,
+            ':now': now
+          })
+        };
+        await dynamoClient.send(new UpdateItemCommand(updateParams));
+      } else {
+        await dynamoClient.send(new PutItemCommand(params));
+      }
+    }
+
+    res.json({ ipercId: id, isUpdate, rowsCount: processedRows.length });
+  } catch (err) {
+    console.error('Error en /iperc-json:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -466,6 +624,7 @@ app.get('/api/iperc', async (req, res) => {
       company: i.company,
       area: i.area,
       process: i.process,
+      rows: i.rows || [],
       updatedAt: i.updatedAt || i.createdAt
     }));
     res.json(data);
