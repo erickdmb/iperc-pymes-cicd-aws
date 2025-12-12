@@ -45,14 +45,14 @@ jobs:
 
       - name: Fill in new image ID in task definition
         id: render-task
-        uses: aws-actions/amazon-ecs-render-task-definition@v5
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-def.json
           container-name: iperc-app
           image: ${{ env.IMAGE_URI }}
 
       - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v5
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.render-task.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
