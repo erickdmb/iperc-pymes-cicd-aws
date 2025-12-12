@@ -43,18 +43,18 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition iperc-app --query taskDefinition > task-def.json
 
-      - name: Fill in new image ID
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v3
+      - name: Fill in new image ID in task definition
+        id: render-task
+        uses: aws-actions/amazon-ecs-render-task-definition@v5
         with:
           task-definition: task-def.json
           container-name: iperc-app
           image: ${{ env.IMAGE_URI }}
 
       - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v3
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v5
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          task-definition: ${{ steps.render-task.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
