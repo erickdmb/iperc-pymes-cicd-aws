@@ -7,8 +7,10 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: iperc-pymes-app
-  ECS_CLUSTER: iperc-cluster
-  ECS_SERVICE: iperc-service
+  ECS_CLUSTER: iperc-pymes-cluster
+  ECS_SERVICE: iperc-pymes-service
+  CONTAINER_NAME: iperc-pymes-app
+  TASK_DEFINITION: iperc-pymes-app
 
 jobs:
   deploy:
@@ -42,7 +44,7 @@ jobs:
       - name: Download current task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition iperc-app \
+            --task-definition ${{ env.TASK_DEFINITION }} \
             --query taskDefinition > task-def.json
 
       - name: Render new task definition
@@ -50,7 +52,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-def.json
-          container-name: iperc-app
+          container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ env.IMAGE_URI }}
 
       - name: Deploy to ECS
