@@ -62,3 +62,23 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+      - name: Get ALB DNS and output app URL
+        run: |
+          ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --region ${{ env.AWS_REGION }} \
+            --query 'LoadBalancers[?LoadBalancerName==`iperc-pymes-alb`].DNSName' \
+            --output text)
+          
+          if [ -z "$ALB_DNS" ]; then
+            echo "⚠️  ALB no encontrado. Verifica que Terraform haya desplegado la infraestructura."
+            echo "Ejecuta: cd infra && terraform apply"
+          else
+            APP_URL="http://$ALB_DNS"
+            echo ""
+            echo "✅ IPERC PyMES desplegado exitosamente!"
+            echo "🌐 Accede a tu app aquí:"
+            echo "   $APP_URL"
+            echo ""
+            echo "📱 La app estará disponible en 1-2 minutos mientras los tasks de ECS se inician."
+          fi
