@@ -10,14 +10,16 @@ IPERC PyMES es una aplicación web completa para la creación, edición y gesti�
 
 - ✅ **Formulario dinámico** con filas editables (agregar/eliminar actividades)
 - ✅ **Cálculo automático** de valor de riesgo en tiempo real (Mr = Probabilidad × Severidad)
-- ✅ **Persistencia en DynamoDB** para almacenamiento de datos evaluaciones
+- ✅ **Persistencia en DynamoDB** para almacenamiento de evaluaciones
 - ✅ **Generación de PDF** profesional con formato landscape y color-coded risks
 - ✅ **Vista HTML imprimible** de cada evaluación IPERC
-- ✅ **Edición** de evaluaciones guardadas
+- ✅ **Edición confiable** de evaluaciones guardadas con datos JSON
+- ✅ **API JSON** moderna para manipulación de datos (`/iperc-json`)
 - ✅ **Sidebar con lista** de todas las evaluaciones registradas
 - ✅ **Filtrado por responsable** de la evaluación
 - ✅ **Guía de valoración** integrada (Severidad vs Probabilidad)
 - ✅ **Responsive design** para desktop y tablet
+- ✅ **Validación de datos** antes de guardar
 
 ## 🏗️ Arquitectura
 
@@ -101,12 +103,16 @@ IPERC PyMES es una aplicación web completa para la creación, edición y gesti�
 iperc-pymes-cicd-aws/
 │
 ├── app/                          # Aplicación Node.js
-│   ├── server.js                 # Express app principal (298 líneas)
+│   ├── server.js                 # Express app principal (691 líneas)
 │   ├── package.json              # Dependencias
 │   ├── package-lock.json
 │   ├── Dockerfile                # Imagen Docker (Alpine, ~45MB)
 │   └── views/
-│       └── ipercForm.html        # UI principal (560 líneas HTML/CSS/JS)
+│       ├── ipercForm.html        # UI principal (formulario IPERC)
+│       ├── css/
+│       │   └── styles.css        # Estilos (responsive design)
+│       └── js/
+│           └── app.js            # JavaScript frontend (lógica de formulario)
 │
 ├── infra/                        # Infraestructura Terraform
 │   ├── main.tf                   # VPC module
@@ -125,9 +131,6 @@ iperc-pymes-cicd-aws/
 ├── .github/
 │   └── workflows/
 │       └── cicd.yml              # Pipeline GitHub Actions
-│
-├── docs/
-│   └── arquitectura.md
 │
 ├── .gitignore
 └── README.md                      # Este archivo
@@ -285,7 +288,31 @@ aws elbv2 describe-target-health \
 
 ---
 
+## 🔄 Cambios Recientes (Última Actualización)
+
+### v1.1.0 — Mejoras en Formulario y API JSON
+
+**Nuevas características:**
+- ✨ **Endpoint `/iperc-json`** — API moderna que acepta datos en formato JSON
+- ✨ **Extracción mejorada de formularios** — Captura confiable de datos mediante DOM query
+- ✨ **Función `cleanObject()`** — Limpia valores undefined antes de guardar en DynamoDB
+- ✨ **Validación de tipos** — Convierte probability/severity a integers
+
+**Correcciones:**
+- 🐛 Fixed: Error "removeUndefinedValues" al editar IPERC
+- 🐛 Fixed: Pérdida de datos al guardar desde edición
+- 🐛 Fixed: URLSearchParams reemplazado por JSON (más confiable)
+- 🐛 Fixed: Normalización de campos de filas
+
+**Archivos separados:**
+- CSS ahora en archivo `app/views/css/styles.css`
+- JavaScript ahora en archivo `app/views/js/app.js`
+- HTML más limpio en `app/views/ipercForm.html`
+
+---
+
 ## 🌐 Acceder a la Aplicación
+
 
 Una vez que el deployment esté completo:
 
@@ -447,18 +474,52 @@ aws ecr describe-images \
 
 ## 📚 Rutas API
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/` | Formulario IPERC (HTML) |
-| POST | `/iperc` | Guardar nuevo IPERC |
-| GET | `/iperc/:id` | Cargar para editar |
-| POST | `/iperc/:id` | Actualizar IPERC |
-| GET | `/iperc/:id/view` | Vista HTML (lectura) |
-| GET | `/pdf/:id` | Descargar PDF |
-| GET | `/api/iperc` | Listar IPERC (JSON) |
-| GET | `/responsable/:name` | Filtrar por responsable |
-| GET | `/list` | HTML con lista (sidebar) |
-| GET | `/health` | Health check (ALB) |
+### Endpoints principales
+
+| Método | Ruta | Descripción | Payload |
+|--------|------|-------------|---------|
+| GET | `/` | Formulario IPERC (HTML) | — |
+| POST | `/iperc` | Guardar IPERC (form-data) | `{company, area, process, rows[N].*}` |
+| **POST** | **`/iperc-json`** | **Guardar IPERC (JSON)** | **`{company, area, process, rows:[], ipercId?}`** |
+| GET | `/api/iperc` | Listar IPERC (JSON) | — |
+| GET | `/pdf/:id` | Descargar PDF | — |
+| GET | `/iperc/:id/view` | Vista HTML (lectura) | — |
+| GET | `/list` | HTML con lista (sidebar) | — |
+| GET | `/responsable/:name` | Filtrar por responsable | — |
+
+### Ejemplos de uso
+
+**Guardar nuevo IPERC (JSON):**
+```bash
+curl -X POST http://localhost:3000/iperc-json \
+  -H "Content-Type: application/json" \
+  -d '{
+    "company": "CONSTRUCTORA ABC S.A.C.",
+    "area": "Operaciones",
+    "process": "Transporte de materiales",
+    "rows": [
+      {
+        "activity": "Carga manual de materiales",
+        "hazard": "Levantamiento de cargas",
+        "consequence": "Lesiones musculoesqueléticas",
+        "probability": 3,
+        "severity": 10,
+        "existingControls": "Capacitación ergonomía",
+        "newControls": "Uso de fajas lumbares",
+        "responsible": "Juan Pérez"
+      }
+    ]
+  }'
+```
+
+**Respuesta esperada:**
+```json
+{
+  "ipercId": "IPERC-2025-ABC123",
+  "isUpdate": false,
+  "rowsCount": 1
+}
+```
 
 ---
 
